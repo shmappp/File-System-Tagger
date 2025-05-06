@@ -77,6 +77,8 @@ class MainWindow(QMainWindow):
         if pixmap:
             if pixmap.width() > 800:
                 pixmap = pixmap.scaledToWidth(800)
+            if pixmap.height() > 1000:
+                pixmap = pixmap.scaledToWidth(1000)
             self.image_preview.setPixmap(pixmap)
             self.preview_stack.setCurrentWidget(self.image_preview)
         else:
