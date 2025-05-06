@@ -29,7 +29,7 @@ class CustomFileSystemModel(QFileSystemModel):
                 file_path = self.filePath(index)
                 file_info = self.fileInfo(index)
                 if file_info.isFile():
-                    return f'{tags.get(file_path, [])}'
+                    return f'{tags.get(file_path, [])}' # TODO: beautify tag display
             else:
                 return super().data(index, role)
         elif role == Qt.ItemDataRole.DecorationRole:
@@ -51,12 +51,17 @@ class MainWindow(QMainWindow):
             self.tree.scrollTo(index)
         else:
             print(f'Navigation to {path} failed')
+    
+    def on_tree_selection_changed(self, current, previous):
+        current_path = self.tree_model.filePath(current)
+        self.path_input.setText(current_path)
 
     def __init__(self):
         super().__init__()
 
         self.root_path = os.path.expanduser("~")
 
+        # workspace setup
         self.setWindowTitle("File System Tagger")
         self.setGeometry(100, 100, 1500, 1200)
         palette = self.palette()
@@ -68,7 +73,10 @@ class MainWindow(QMainWindow):
         main_layout = QHBoxLayout()
         central_widget.setLayout(main_layout)
 
+        # explorer layout
         explorer_layout = QVBoxLayout()
+
+        # explorer tree view
         self.tree_model = CustomFileSystemModel()
         self.tree_model.setRootPath(self.root_path)
         self.root_index = self.tree_model.index(self.root_path) #TODO: replace
@@ -77,11 +85,16 @@ class MainWindow(QMainWindow):
         self.tree.setColumnWidth(0, 300)
         self.tree.setRootIndex(self.root_index)
         self.tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+
+        self.tree.selectionModel().currentChanged.connect(self.on_tree_selection_changed)
         
+        # path field
         self.path_input = QLineEdit()
         self.path_input.setPlaceholderText('Enter full path and press Enter')
         self.path_input.returnPressed.connect(self.navigate_to_path)
+        self.path_input.setText(self.root_path) # default to root
 
+        # path field completion logic
         self.completer_model = QFileSystemModel()
         self.completer_model.setRootPath(self.root_path)
 
@@ -92,9 +105,15 @@ class MainWindow(QMainWindow):
 
         self.path_input.setCompleter(completer)
 
+        # add widgets to explorer layout
         explorer_layout.addWidget(self.path_input)
         explorer_layout.addWidget(self.tree)
+
+        # add explorer layout to main layout
         main_layout.addLayout(explorer_layout)
+
+        
+        
 
 
 
