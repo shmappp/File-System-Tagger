@@ -1,14 +1,13 @@
 import os
 import json
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView, QCompleter, QAbstractItemView, QSplitter
+    QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView, QCompleter, QAbstractItemView, QSplitter, QMenu
 )
-from PyQt6.QtGui import QColor, QPalette, QFileSystemModel, QPixmap
+from PyQt6.QtGui import QColor, QPalette, QFileSystemModel, QPixmap, QAction
 from PyQt6.QtCore import QDir, Qt, QModelIndex
 import packages.json_util as json_util
 import qdarktheme
 from packages.thumbnail_extractor import get_thumbnail_pixmap_ffmpeg
-
 import sys
 
 DATA_JSON = os.path.join(os.getcwd(), 'tags.json')
@@ -76,7 +75,38 @@ class MainWindow(QMainWindow):
     def file_selected(self, index):
         path = self.tree_model.filePath(index)
         if os.path.isfile(path):
-            self.display_preview(path)        
+            self.display_preview(path)
+    
+    def handle_open(self, path):
+        os.startfile(path)
+
+    def show_custom_context_menu(self, global_pos, paths):
+        menu = QMenu()
+        open_action = QAction('Open')
+        menu.addAction(open_action)
+        
+        if len(paths) == 1:
+            open_action.triggered.connect(lambda: self.handle_open(list(paths)[0]))
+    
+        menu.exec(global_pos)
+
+    def on_tree_context_menu(self, pos):
+        index = self.tree.indexAt(pos)
+
+        if not index.isValid():
+            return
+        selected_indexes = self.tree.selectionModel().selectedIndexes()
+        selected_paths = set()
+        for i in selected_indexes:
+            if i.column() == 0: 
+                selected_paths.add(self.tree_model.filePath(i))
+        
+        selected_path = self.tree_model.filePath(index)
+        if selected_path not in selected_paths:
+            selected_paths.add(selected_path)
+        
+        global_pos = self.tree.viewport().mapToGlobal(pos)
+        self.show_custom_context_menu(global_pos, selected_paths)
 
 
     def __init__(self):
@@ -111,9 +141,12 @@ class MainWindow(QMainWindow):
         self.tree.setColumnWidth(0, 300)
         self.tree.setRootIndex(self.root_index)
         self.tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self.on_tree_context_menu)
 
         self.tree.selectionModel().currentChanged.connect(self.on_tree_selection_changed)
         self.tree.clicked.connect(self.file_selected)
+        #self.tree.selectionModel().currentChanged.connect(self.file_selected) # optional, allows arrow keys to preview
         
         # path field
         self.path_input = QLineEdit()
@@ -147,8 +180,10 @@ class MainWindow(QMainWindow):
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_label.setFixedHeight(300)
 
+        # add widgets to actions layout
         actions_layout.addWidget(self.preview_label)
 
+        # add actions layout to main layout
         splitter.addWidget(actions_widget)
         
         
