@@ -61,6 +61,11 @@ class MainWindow(QMainWindow):
         self.tree.setColumnWidth(0, 300)
         self.tree.setRootIndex(self.explorer.index(QDir.rootPath()))
 
+        self.path_input = QLineEdit()
+        self.path_input.setPlaceholderText('Enter full path and press Enter')
+        self.path_input.returnPressed.connect(self.navigate_to_path)
+
+        explorer_layout.addWidget(self.path_input)
         explorer_layout.addWidget(self.tree)
         main_layout.addLayout(explorer_layout)
 
