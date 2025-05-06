@@ -1,17 +1,16 @@
 import os
 import json
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView
+    QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView, QCompleter
 )
 from PyQt6.QtGui import QColor, QPalette, QFileSystemModel
-from PyQt6.QtCore import QDir
+from PyQt6.QtCore import QDir, Qt
 import packages.json_util
 import qdarktheme
 
 import sys
 
 DATA_JSON = os.path.join(os.getcwd(), 'data.json')
-
 
 
 class Color(QWidget):
@@ -32,7 +31,7 @@ class MainWindow(QMainWindow):
             print('Path does not exist')
             return
 
-        index = self.model.index(path)
+        index = self.tree_model.index(path)
         if index.isValid():
             self.tree.expand(index.parent())
             self.tree.setCurrentIndex(index)
@@ -42,6 +41,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+
+        self.root_path = os.path.expanduser("~")
 
         self.setWindowTitle("File System Tagger")
         self.setGeometry(100, 100, 1500, 1200)
@@ -55,15 +56,27 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(main_layout)
 
         explorer_layout = QVBoxLayout()
-        self.explorer = QFileSystemModel()
+        self.tree_model = QFileSystemModel()
+        self.tree_model.setRootPath(self.root_path)
+        self.root_index = self.tree_model.index(self.root_path) #TODO: replace
         self.tree = QTreeView()
-        self.tree.setModel(self.explorer)
+        self.tree.setModel(self.tree_model)
         self.tree.setColumnWidth(0, 300)
-        self.tree.setRootIndex(self.explorer.index(QDir.rootPath()))
-
+        self.tree.setRootIndex(self.root_index)
+        
         self.path_input = QLineEdit()
         self.path_input.setPlaceholderText('Enter full path and press Enter')
         self.path_input.returnPressed.connect(self.navigate_to_path)
+
+        self.completer_model = QFileSystemModel()
+        self.completer_model.setRootPath(self.root_path)
+
+        completer = QCompleter(self.completer_model, self.path_input)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchFlag.MatchStartsWith)
+        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+
+        self.path_input.setCompleter(completer)
 
         explorer_layout.addWidget(self.path_input)
         explorer_layout.addWidget(self.tree)
