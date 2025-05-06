@@ -46,6 +46,7 @@ class MainWindow(QMainWindow):
 
         index = self.tree_model.index(path)
         if index.isValid():
+            self.tree.setRootIndex(index) #optional: dynamic root traversal
             self.tree.expand(index.parent())
             self.tree.setCurrentIndex(index)
             self.tree.scrollTo(index)
