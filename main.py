@@ -1,7 +1,7 @@
 import os
 import json
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView, QCompleter, QAbstractItemView
+    QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView, QCompleter, QAbstractItemView, QSplitter
 )
 from PyQt6.QtGui import QColor, QPalette, QFileSystemModel
 from PyQt6.QtCore import QDir, Qt, QModelIndex
@@ -70,11 +70,14 @@ class MainWindow(QMainWindow):
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        main_layout = QHBoxLayout()
-        central_widget.setLayout(main_layout)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        central_widget.setLayout(QVBoxLayout())
+        central_widget.layout().addWidget(splitter)
+
 
         # explorer layout
-        explorer_layout = QVBoxLayout()
+        explorer_widget = QWidget()
+        explorer_layout = QVBoxLayout(explorer_widget)
 
         # explorer tree view
         self.tree_model = CustomFileSystemModel()
@@ -110,8 +113,19 @@ class MainWindow(QMainWindow):
         explorer_layout.addWidget(self.tree)
 
         # add explorer layout to main layout
-        main_layout.addLayout(explorer_layout)
+        splitter.addWidget(explorer_widget)
 
+        # actions layout
+        actions_widget = QWidget()
+        actions_layout = QVBoxLayout(actions_widget)
+
+        self.preview_label = QLabel("Preview")
+        self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.preview_label.setFixedHeight(300)
+
+        actions_layout.addWidget(self.preview_label)
+
+        splitter.addWidget(actions_widget)
         
         
 
