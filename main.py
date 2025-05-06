@@ -68,7 +68,7 @@ class MainWindow(QMainWindow):
             return
         
         pixmap = None
-        if path.lower().endswith(('.mp4', '.mkv', '.mov', '.webm')):
+        if path.lower().endswith(('.mp4', '.mkv', '.mov', '.webm', '.m4a')):
             qimage = get_thumbnail_qimage_ffmpeg(path)
             if qimage:
                 pixmap = QPixmap.fromImage(qimage.copy())
