@@ -88,6 +88,10 @@ class MainWindow(QMainWindow):
     
     def handle_open(self, path):
         os.startfile(path)
+    
+    def open_selected_file(self, index):
+        path = self.tree_model.filePath(index)
+        self.handle_open(path)
 
     def show_custom_context_menu(self, global_pos, paths):
         menu = QMenu()
@@ -155,7 +159,8 @@ class MainWindow(QMainWindow):
         self.tree.selectionModel().currentChanged.connect(self.on_tree_selection_changed)
         self.tree.clicked.connect(self.file_selected)
         #self.tree.selectionModel().currentChanged.connect(self.file_selected) # optional, allows arrow keys to preview
-        
+        self.tree.doubleClicked.connect(self.open_selected_file)
+
         # path field
         self.path_input = QLineEdit()
         self.path_input.setPlaceholderText('Enter full path and press Enter')
