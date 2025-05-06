@@ -1,9 +1,9 @@
 import os
 import json
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView, QCompleter, QAbstractItemView, QSplitter, QMenu
+    QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView, QCompleter, QAbstractItemView, QSplitter, QMenu, QStackedWidget, QTextEdit
 )
-from PyQt6.QtGui import QColor, QPalette, QFileSystemModel, QPixmap, QAction
+from PyQt6.QtGui import QColor, QPalette, QFileSystemModel, QPixmap, QAction, QTextOption
 from PyQt6.QtCore import QDir, Qt, QModelIndex
 import packages.json_util as json_util
 import qdarktheme
@@ -57,6 +57,13 @@ class MainWindow(QMainWindow):
         self.path_input.setText(current_path)
 
     def display_preview(self, path):
+        if path.lower().endswith(('.txt', '.md', '.log')):
+            with open(path, 'r', encoding='utf-8') as f:
+                text = f.read()
+                self.text_preview.setText(text[:1000])
+            self.preview_stack.setCurrentWidget(self.text_preview)
+            return
+        
         pixmap = None
         if path.lower().endswith(('.mp4', '.mkv', '.mov', '.webm')):
             qimage = get_thumbnail_pixmap_ffmpeg(path)
@@ -64,13 +71,14 @@ class MainWindow(QMainWindow):
                 pixmap = QPixmap.fromImage(qimage.copy())
         elif path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
             pixmap = QPixmap(path)
-
         if pixmap:
             if pixmap.width() > 800:
                 pixmap = pixmap.scaledToWidth(800)
-            self.preview_label.setPixmap(pixmap)
+            self.image_preview.setPixmap(pixmap)
+            self.preview_stack.setCurrentWidget(self.image_preview)
         else:
-            self.preview_label.setText('No preview available')
+            self.text_preview.setText('No preview available')
+            self.preview_stack.setCurrentWidget(self.text_preview)
 
     def file_selected(self, index):
         path = self.tree_model.filePath(index)
@@ -92,7 +100,6 @@ class MainWindow(QMainWindow):
 
     def on_tree_context_menu(self, pos):
         index = self.tree.indexAt(pos)
-
         if not index.isValid():
             return
         selected_indexes = self.tree.selectionModel().selectedIndexes()
@@ -176,12 +183,19 @@ class MainWindow(QMainWindow):
         actions_widget = QWidget()
         actions_layout = QVBoxLayout(actions_widget)
 
-        self.preview_label = QLabel('Preview')
-        self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.preview_label.setFixedHeight(300)
+        self.preview_stack = QStackedWidget()
+
+        self.text_preview = QTextEdit()
+        self.text_preview.setWordWrapMode(QTextOption.WrapMode.WordWrap)
+
+        self.image_preview = QLabel('Preview')
+        self.image_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.preview_stack.addWidget(self.text_preview)
+        self.preview_stack.addWidget(self.image_preview)
 
         # add widgets to actions layout
-        actions_layout.addWidget(self.preview_label)
+        actions_layout.addWidget(self.preview_stack)
 
         # add actions layout to main layout
         splitter.addWidget(actions_widget)
