@@ -76,6 +76,7 @@ class MainWindow(QMainWindow):
         self.tree.setModel(self.tree_model)
         self.tree.setColumnWidth(0, 300)
         self.tree.setRootIndex(self.root_index)
+        self.tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         
         self.path_input = QLineEdit()
         self.path_input.setPlaceholderText('Enter full path and press Enter')
