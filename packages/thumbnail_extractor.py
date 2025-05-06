@@ -4,7 +4,7 @@ from PIL import Image
 import io
 import numpy as np
 
-def get_thumbnail_pixmap_ffmpeg(video_path: str, time_position: str = '00:00:01'):
+def get_thumbnail_qimage_ffmpeg(video_path, time_position = '00:00:01'):
     try:
         result = subprocess.run(
             [

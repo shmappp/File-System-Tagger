@@ -7,7 +7,7 @@ from PyQt6.QtGui import QColor, QPalette, QFileSystemModel, QPixmap, QAction, QT
 from PyQt6.QtCore import QDir, Qt, QModelIndex
 import packages.json_util as json_util
 import qdarktheme
-from packages.thumbnail_extractor import get_thumbnail_pixmap_ffmpeg
+from packages.thumbnail_extractor import get_thumbnail_qimage_ffmpeg
 import sys
 
 DATA_JSON = os.path.join(os.getcwd(), 'tags.json')
@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
         
         pixmap = None
         if path.lower().endswith(('.mp4', '.mkv', '.mov', '.webm')):
-            qimage = get_thumbnail_pixmap_ffmpeg(path)
+            qimage = get_thumbnail_qimage_ffmpeg(path)
             if qimage:
                 pixmap = QPixmap.fromImage(qimage.copy())
         elif path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
