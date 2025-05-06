@@ -3,10 +3,11 @@ import json
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView, QCompleter, QAbstractItemView, QSplitter
 )
-from PyQt6.QtGui import QColor, QPalette, QFileSystemModel
+from PyQt6.QtGui import QColor, QPalette, QFileSystemModel, QPixmap
 from PyQt6.QtCore import QDir, Qt, QModelIndex
 import packages.json_util as json_util
 import qdarktheme
+from packages.thumbnail_extractor import get_thumbnail_pixmap_ffmpeg
 
 import sys
 
@@ -56,13 +57,35 @@ class MainWindow(QMainWindow):
         current_path = self.tree_model.filePath(current)
         self.path_input.setText(current_path)
 
+    def display_preview(self, path):
+        pixmap = None
+        if path.lower().endswith(('.mp4', '.mkv', '.mov', '.webm')):
+            qimage = get_thumbnail_pixmap_ffmpeg(path)
+            if qimage:
+                pixmap = QPixmap.fromImage(qimage.copy())
+        elif path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
+            pixmap = QPixmap(path)
+
+        if pixmap:
+            if pixmap.width() > 800:
+                pixmap = pixmap.scaledToWidth(800)
+            self.preview_label.setPixmap(pixmap)
+        else:
+            self.preview_label.setText('No preview available')
+
+    def file_selected(self, index):
+        path = self.tree_model.filePath(index)
+        if os.path.isfile(path):
+            self.display_preview(path)        
+
+
     def __init__(self):
         super().__init__()
 
-        self.root_path = os.path.expanduser("~")
+        self.root_path = os.path.expanduser('~')
 
         # workspace setup
-        self.setWindowTitle("File System Tagger")
+        self.setWindowTitle('File System Tagger')
         self.setGeometry(100, 100, 1500, 1200)
         palette = self.palette()
         palette.setColor(QPalette.ColorRole.Window, QColor('#111111'))
@@ -90,6 +113,7 @@ class MainWindow(QMainWindow):
         self.tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
 
         self.tree.selectionModel().currentChanged.connect(self.on_tree_selection_changed)
+        self.tree.clicked.connect(self.file_selected)
         
         # path field
         self.path_input = QLineEdit()
@@ -119,7 +143,7 @@ class MainWindow(QMainWindow):
         actions_widget = QWidget()
         actions_layout = QVBoxLayout(actions_widget)
 
-        self.preview_label = QLabel("Preview")
+        self.preview_label = QLabel('Preview')
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_label.setFixedHeight(300)
 
