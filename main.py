@@ -1,28 +1,41 @@
 import os
 import json
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView, QCompleter
+    QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView, QCompleter, QAbstractItemView
 )
 from PyQt6.QtGui import QColor, QPalette, QFileSystemModel
-from PyQt6.QtCore import QDir, Qt
-import packages.json_util
+from PyQt6.QtCore import QDir, Qt, QModelIndex
+import packages.json_util as json_util
 import qdarktheme
 
 import sys
 
-DATA_JSON = os.path.join(os.getcwd(), 'data.json')
+DATA_JSON = os.path.join(os.getcwd(), 'tags.json')
 
+tags = json_util.load_data(DATA_JSON)
 
-class Color(QWidget):
-    def __init__(self, color):
+class CustomFileSystemModel(QFileSystemModel):
+    def __init__(self):
         super().__init__()
 
-        self.setAutoFillBackground(True)
+    def columnCount(self, parent = QModelIndex()):
+        return super().columnCount(parent) + 1
 
-        palette = self.palette()
-        palette.setColor(QPalette.ColorRole.Window, QColor(color))
-        self.setPalette(palette)
-
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+        if role == Qt.ItemDataRole.DisplayRole:
+            if index.column() == self.columnCount() - 1:
+                file_path = self.filePath(index)
+                file_info = self.fileInfo(index)
+                if file_info.isFile():
+                    return f'{tags.get(file_path, [])}'
+            else:
+                return super().data(index, role)
+        elif role == Qt.ItemDataRole.DecorationRole:
+            return super().data(index, role)
+        return None
+    
 class MainWindow(QMainWindow):
     def navigate_to_path(self):
         path = self.path_input.text()
@@ -56,7 +69,7 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(main_layout)
 
         explorer_layout = QVBoxLayout()
-        self.tree_model = QFileSystemModel()
+        self.tree_model = CustomFileSystemModel()
         self.tree_model.setRootPath(self.root_path)
         self.root_index = self.tree_model.index(self.root_path) #TODO: replace
         self.tree = QTreeView()
