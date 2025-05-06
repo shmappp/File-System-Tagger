@@ -9,6 +9,8 @@ import packages.json_util as json_util
 import qdarktheme
 from packages.thumbnail_extractor import get_thumbnail_qimage_ffmpeg
 import sys
+import subprocess
+import platform
 
 DATA_JSON = os.path.join(os.getcwd(), 'tags.json')
 
@@ -89,6 +91,25 @@ class MainWindow(QMainWindow):
     def handle_open(self, path):
         os.startfile(path)
     
+    def handle_reveal(self, path):
+        # if os.path.isdir(path):
+        #     os.startfile(path)
+        # elif os.path.isfile(path):
+        #     parent_folder = os.path.abspath(os.path.join(path, os.pardir))
+        #     os.startfile(parent_folder)
+        path = os.path.abspath(path)
+        system = platform.system()
+
+        if system == 'Windows':
+            subprocess.run(['explorer', '/select,', os.path.normpath(path)])
+        elif system == 'Darwin':
+            subprocess.run(['open', '-R', path])
+        elif system == 'Linus':
+            folder = os.path.dirname(path)
+            subprocess.run(['xdg-open', folder])
+        else:
+            print(f'Unsupported OS: {system}')
+
     def open_selected_file(self, index):
         path = self.tree_model.filePath(index)
         self.handle_open(path)
@@ -96,10 +117,13 @@ class MainWindow(QMainWindow):
     def show_custom_context_menu(self, global_pos, paths):
         menu = QMenu()
         open_action = QAction('Open')
+        reveal_action = QAction('Reveal')
         menu.addAction(open_action)
-        
+        menu.addAction(reveal_action)   
+
         if len(paths) == 1:
             open_action.triggered.connect(lambda: self.handle_open(list(paths)[0]))
+            reveal_action.triggered.connect(lambda: self.handle_reveal(list(paths)[0]))
     
         menu.exec(global_pos)
 
