@@ -6,7 +6,7 @@ def load_data(json_path):
         with open(json_path, 'r') as f:
             return json.load(f)
     else:
-        return []
+        return {}
 
 def save_data(data, json_path):
     with open(json_path, 'w') as f:
