@@ -8,13 +8,15 @@ from PyQt6.QtCore import QDir, Qt, QModelIndex
 import packages.json_util as json_util
 import qdarktheme
 from packages.thumbnail_extractor import get_thumbnail_qimage_ffmpeg
+import packages.tag_util as tag_util
 import sys
 import subprocess
 import platform
+from functools import partial
 
-DATA_JSON = os.path.join(os.getcwd(), 'tags.json')
+TAG_JSON = os.path.join(os.getcwd(), 'tags.json')
 
-tags = json_util.load_data(DATA_JSON)
+tags = json_util.load_data(TAG_JSON)
 
 class CustomFileSystemModel(QFileSystemModel):
     def __init__(self):
@@ -75,20 +77,30 @@ class MainWindow(QMainWindow):
         elif path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
             pixmap = QPixmap(path)
         if pixmap:
-            if pixmap.width() > 800:
+            if pixmap.width() > 600:
+                pixmap = pixmap.scaledToWidth(600)
+            if pixmap.height() > 800:
                 pixmap = pixmap.scaledToWidth(800)
-            if pixmap.height() > 1000:
-                pixmap = pixmap.scaledToWidth(1000)
             self.image_preview.setPixmap(pixmap)
             self.preview_stack.setCurrentWidget(self.image_preview)
         else:
             self.text_preview.setText('No preview available')
             self.preview_stack.setCurrentWidget(self.text_preview)
 
+    def populate_tag_display(self, path):
+        if os.path.exists(path):
+            self.tag_display.setText(','.join(tags.get(path, []))) 
+    
+    def reset_tag_button(self):
+        self.update_tag_button.setText('Update tags')
+
     def file_selected(self, index):
         path = self.tree_model.filePath(index)
         if os.path.isfile(path):
+            self.current_path = path
             self.display_preview(path)
+            self.populate_tag_display(path)
+            self.reset_tag_button()
     
     def handle_open(self, path):
         os.startfile(path)
@@ -145,6 +157,29 @@ class MainWindow(QMainWindow):
         
         global_pos = self.tree.viewport().mapToGlobal(pos)
         self.show_custom_context_menu(global_pos, selected_paths)
+    
+    def write_tags(self, prev_path=None):
+        path = self.current_path
+        if path:
+            extracted_tags = tag_util.extract_tags(self.tag_display.toPlainText())
+            # if empty ask for confirmation
+            if not extracted_tags:
+                if prev_path:
+                    tags[path] = extracted_tags
+                    json_util.save_data(tags, TAG_JSON)
+                    self.reset_tag_button()
+                    return
+                self.update_tag_button.setText('Confirm empty tag?')
+                self.update_tag_button.clicked.connect(partial(self.write_tags, True))
+                return
+            
+            tags[path] = extracted_tags
+            json_util.save_data(tags, TAG_JSON)
+            self.reset_tag_button()
+            
+            
+
+        
 
 
     def __init__(self):
@@ -171,6 +206,7 @@ class MainWindow(QMainWindow):
         explorer_layout = QVBoxLayout(explorer_widget)
 
         # explorer tree view
+        self.current_path = None
         self.tree_model = CustomFileSystemModel()
         self.tree_model.setRootPath(self.root_path)
         self.root_index = self.tree_model.index(self.root_path) #TODO: replace
@@ -215,6 +251,7 @@ class MainWindow(QMainWindow):
         actions_widget = QWidget()
         actions_layout = QVBoxLayout(actions_widget)
 
+        # preview widget
         self.preview_stack = QStackedWidget()
 
         self.text_preview = QTextEdit()
@@ -226,8 +263,20 @@ class MainWindow(QMainWindow):
         self.preview_stack.addWidget(self.text_preview)
         self.preview_stack.addWidget(self.image_preview)
 
+        # tagging display widget
+        self.tag_display = QTextEdit()
+        self.tag_display.setWordWrapMode(QTextOption.WrapMode.WordWrap)
+        self.tag_display.setPlaceholderText('Type comma-separated tags')
+
+        # tagging confirmation button
+        self.update_tag_button = QPushButton()
+        self.update_tag_button.setText('Update tags')
+        self.update_tag_button.clicked.connect(self.write_tags)
+
         # add widgets to actions layout
         actions_layout.addWidget(self.preview_stack)
+        actions_layout.addWidget(self.tag_display)
+        actions_layout.addWidget(self.update_tag_button)
 
         # add actions layout to main layout
         splitter.addWidget(actions_widget)
