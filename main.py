@@ -1,19 +1,17 @@
 import os
 
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QMainWindow, QPushButton, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QTreeView, QCompleter, QAbstractItemView, QSplitter, QMenu, QStackedWidget, QTextEdit
+    QApplication, QWidget, QMainWindow, QVBoxLayout,QSplitter, QMenu, QTextEdit
 )
-from PyQt6.QtGui import QColor, QPalette, QFileSystemModel, QPixmap, QAction, QTextOption
-from PyQt6.QtCore import QDir, Qt, QModelIndex
+from PyQt6.QtGui import QColor, QPalette, QAction, QTextOption
+from PyQt6.QtCore import Qt
 import qdarktheme
 import sys
 import subprocess
 import platform
 from functools import partial
 
-from utils.thumbnail_extractor import get_thumbnail_qimage_ffmpeg
 import utils.json_util as json_util
-import utils.tag_util as tag_util
 
 from config import Config
 
