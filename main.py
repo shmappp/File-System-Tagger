@@ -18,6 +18,39 @@ TAG_JSON = os.path.join(os.getcwd(), 'tags.json')
 
 tags = json_util.load_data(TAG_JSON)
 
+class TagConfirmButton(QPushButton):
+    def __init__(self):
+        super().__init__()
+        self.confirming = False
+        self.default_text = 'Update tags'
+        self.confirm_text = 'Confirm empty tags?'
+        self.setText(self.default_text)
+        self.tag_display = None
+        self.clicked.connect(self.on_click)
+     
+    def set_tag_display(self, tag_display):
+        self.tag_display = tag_display
+    
+    def set_path(self, path):
+        self.path = path
+
+    def on_click(self):
+        if self.tag_display is not None:
+            extracted_tags = tag_util.extract_tags(self.tag_display.toPlainText())
+            if extracted_tags or self.confirming:
+                tags[self.path] = extracted_tags
+                json_util.save_data(tags, TAG_JSON)
+                self.reset()
+                return
+            else:
+                self.setText(self.confirm_text)
+                self.confirming = True
+                return
+
+    def reset(self):
+        self.setText(self.default_text)
+        self.confirming = False
+        
 class CustomFileSystemModel(QFileSystemModel):
     def __init__(self):
         super().__init__()
@@ -97,10 +130,10 @@ class MainWindow(QMainWindow):
     def file_selected(self, index):
         path = self.tree_model.filePath(index)
         if os.path.isfile(path):
-            self.current_path = path
             self.display_preview(path)
             self.populate_tag_display(path)
-            self.reset_tag_button()
+            self.update_tag_button.set_path(path)
+            
     
     def handle_open(self, path):
         os.startfile(path)
@@ -157,26 +190,6 @@ class MainWindow(QMainWindow):
         
         global_pos = self.tree.viewport().mapToGlobal(pos)
         self.show_custom_context_menu(global_pos, selected_paths)
-    
-    def write_tags(self, prev_path=None):
-        path = self.current_path
-        if path:
-            extracted_tags = tag_util.extract_tags(self.tag_display.toPlainText())
-            # if empty ask for confirmation
-            if not extracted_tags:
-                if prev_path:
-                    tags[path] = extracted_tags
-                    json_util.save_data(tags, TAG_JSON)
-                    self.reset_tag_button()
-                    return
-                self.update_tag_button.setText('Confirm empty tag?')
-                self.update_tag_button.clicked.connect(partial(self.write_tags, True))
-                return
-            
-            tags[path] = extracted_tags
-            json_util.save_data(tags, TAG_JSON)
-            self.reset_tag_button()
-            
             
 
         
@@ -206,7 +219,6 @@ class MainWindow(QMainWindow):
         explorer_layout = QVBoxLayout(explorer_widget)
 
         # explorer tree view
-        self.current_path = None
         self.tree_model = CustomFileSystemModel()
         self.tree_model.setRootPath(self.root_path)
         self.root_index = self.tree_model.index(self.root_path) #TODO: replace
@@ -269,9 +281,8 @@ class MainWindow(QMainWindow):
         self.tag_display.setPlaceholderText('Type comma-separated tags')
 
         # tagging confirmation button
-        self.update_tag_button = QPushButton()
-        self.update_tag_button.setText('Update tags')
-        self.update_tag_button.clicked.connect(self.write_tags)
+        self.update_tag_button = TagConfirmButton()
+        self.update_tag_button.set_tag_display(self.tag_display)
 
         # add widgets to actions layout
         actions_layout.addWidget(self.preview_stack)
