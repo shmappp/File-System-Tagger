@@ -1,5 +1,7 @@
+import os
+
 class Config:
-    DEFAULT_ROOT_PATH = r'C:\Users\Shams\Documents\testdir' #os.path.expanduser('~')
+    DEFAULT_ROOT_PATH = os.path.expanduser('~')
     WINDOW_TITLE = 'File System Tagger'
 
     WINDOW_GEOMETRY = (100, 100, 1500, 1200)
